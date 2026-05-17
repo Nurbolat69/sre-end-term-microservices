@@ -4,7 +4,7 @@
 
 | File | Source | Points |
 |------|--------|--------|
-| **REPORT.pdf** | `docs/TEAM_REPORT.md` | 40 |
+| **REPORT.pdf** | `docs/REPORT_FOR_PDF.md` (visual, many screenshots) **or** `docs/TEAM_REPORT.md` (text) | 40 |
 | **PRESENTATION.pdf** | `docs/PRESENTATION.md` | (presentation grade) |
 
 **Do NOT submit** repository ZIP unless instructor asks — Git URL is **inside REPORT**.
