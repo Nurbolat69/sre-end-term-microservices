@@ -1,11 +1,14 @@
 # Cross-platform shortcuts (use Git Bash / WSL / make on Windows)
-.PHONY: up down health slo incident recover evidence all
+.PHONY: up down health slo incident recover evidence all validate ci
+
+validate ci:
+	bash ci/validate.sh
 
 up:
-	cd docker-compose && docker compose -f docker-compose.full.yml up -d
+	cd docker-compose && docker compose -f docker-compose.full.yml -f docker-compose.ports-default.yml up -d
 
 down:
-	cd docker-compose && docker compose -f docker-compose.full.yml down -v
+	cd docker-compose && docker compose -f docker-compose.full.yml -f docker-compose.ports-default.yml down -v
 
 health:
 	powershell -File scripts/verify-health.ps1

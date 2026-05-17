@@ -1,4 +1,4 @@
-# Prometheus recording rules — SLI pre-aggregation (Assignment 2)
+# SLI recording rules (Assignment 2) - safe division when no traffic
 groups:
   - name: sre_sli_recording
     interval: 30s
@@ -8,12 +8,19 @@ groups:
 
       - record: sre:error_rate:5m
         expr: |
-          sum(rate(request_duration_seconds_count{status_code=~"5.."}[5m])) by (job, service)
-          /
-          sum(rate(request_duration_seconds_count[5m])) by (job, service)
+          (
+            sum(rate(request_duration_seconds_count{status_code=~"5.."}[5m])) by (job, service)
+            /
+            sum(rate(request_duration_seconds_count[5m])) by (job, service)
+          ) and sum(rate(request_duration_seconds_count[5m])) by (job, service) > 0
 
       - record: sre:success_rate:5m
-        expr: 1 - sre:error_rate:5m
+        expr: |
+          1 - (
+            sum(rate(request_duration_seconds_count{status_code=~"5.."}[5m])) by (job, service)
+            /
+            sum(rate(request_duration_seconds_count[5m])) by (job, service)
+          )
 
       - record: sre:latency_p95:5m
         expr: |

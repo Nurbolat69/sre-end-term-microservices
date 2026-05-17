@@ -1,18 +1,10 @@
-# Recover Order Service — remove incident overlay
-$ErrorActionPreference = "Stop"
-$ComposeDir = Join-Path (Split-Path -Parent $PSScriptRoot) "docker-compose"
+$ErrorActionPreference = 'Stop'
+. "$PSScriptRoot\_lib\SrePorts.ps1"
+$compose = Get-SreComposeArgs
 
-Write-Host "==> Recovering Order Service (correct DB config)..." -ForegroundColor Green
-Push-Location $ComposeDir
-
-# Recreate orders WITHOUT incident overlay
-docker compose -f docker-compose.full.yml up -d orders --force-recreate
-
+Write-Host '==> Recovering Order Service...' -ForegroundColor Green
+Push-Location $compose.Directory
+docker compose @($compose.Args) up -d orders --force-recreate
 Pop-Location
-
 Start-Sleep -Seconds 12
-Write-Host ""
-docker ps --filter "name=orders" --format "table {{.Names}}\t{{.Status}}"
-Write-Host ""
-Write-Host "Recovery done. Wait 2-5 min for Prometheus alerts to clear." -ForegroundColor Green
-Write-Host "Run: .\scripts\verify-health.ps1" -ForegroundColor Cyan
+Write-Host 'Recovery done. Run .\scripts\verify-health.ps1' -ForegroundColor Green

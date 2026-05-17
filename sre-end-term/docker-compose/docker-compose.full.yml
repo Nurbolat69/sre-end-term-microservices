@@ -67,11 +67,13 @@ services:
       sre.service: order-service
     environment:
       - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+      - MONGO_HOST=orders-db:27017
     healthcheck:
       test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
       interval: 15s
       timeout: 5s
       retries: 3
+      start_period: 60s
 
   orders-db:
     image: mongo:3.4

@@ -1,23 +1,12 @@
-# Health smoke checks
-$ErrorActionPreference = "Continue"
-$SreRoot = Split-Path -Parent $PSScriptRoot
-$shopPort = "80"; $promPort = "9090"; $grafPort = "3000"; $amPort = "9093"
-$envFile = Join-Path $SreRoot ".deploy-ports.env"
-if (Test-Path $envFile) {
-    Get-Content $envFile | ForEach-Object {
-        if ($_ -match '^SHOP_PORT=(.+)$') { $shopPort = $matches[1].Trim() }
-        if ($_ -match '^PROM_PORT=(.+)$') { $promPort = $matches[1].Trim() }
-        if ($_ -match '^GRAFANA_PORT=(.+)$') { $grafPort = $matches[1].Trim() }
-        if ($_ -match '^ALERT_PORT=(.+)$') { $amPort = $matches[1].Trim() }
-    }
-}
+. "$PSScriptRoot\_lib\SrePorts.ps1"
+$ports = Get-SrePorts
 $ok = 0; $fail = 0
 
 function Test-Url($label, $url) {
     try {
-        $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10
+        $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 12
         if ($r.StatusCode -lt 500) {
-            Write-Host "[OK]   $label HTTP $($r.StatusCode)" -ForegroundColor Green
+            Write-Host "[OK]   $label ($($r.StatusCode))" -ForegroundColor Green
             $script:ok++
         } else {
             Write-Host "[FAIL] $label HTTP $($r.StatusCode)" -ForegroundColor Red
@@ -29,15 +18,13 @@ function Test-Url($label, $url) {
     }
 }
 
-Write-Host "=== SRE Health Check ===" -ForegroundColor Cyan
-Test-Url "Shop" "http://localhost:$shopPort/"
-Test-Url "Prometheus" "http://localhost:$promPort/-/healthy"
-Test-Url "Grafana" "http://localhost:$grafPort/api/health"
-Test-Url "Alertmanager" "http://localhost:$amPort/-/healthy"
+Write-Host '=== SRE Health Check ===' -ForegroundColor Cyan
+Test-Url 'Shop' "http://localhost:$($ports.Shop)/"
+Test-Url 'Prometheus' "http://localhost:$($ports.Prom)/-/healthy"
+Test-Url 'Grafana' "http://localhost:$($ports.Grafana)/api/health"
+Test-Url 'Alertmanager' "http://localhost:$($ports.Alert)/-/ready"
 
-Write-Host ""
-Write-Host "Docker (sre-end-term):" -ForegroundColor Cyan
-docker ps --filter "name=sre-end-term" --format "table {{.Names}}\t{{.Status}}" 2>$null | Select-Object -First 15
-
-Write-Host ""
-Write-Host "Result: $ok ok, $fail failed" -ForegroundColor $(if ($fail -eq 0) { "Green" } else { "Yellow" })
+Write-Host ''
+docker ps --filter 'name=sre-end-term' --format 'table {{.Names}}\t{{.Status}}' 2>$null | Select-Object -First 18
+Write-Host ''
+Write-Host "Result: $ok ok, $fail failed" -ForegroundColor $(if ($fail -eq 0) { 'Green' } else { 'Yellow' })

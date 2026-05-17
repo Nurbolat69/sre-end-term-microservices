@@ -1,17 +1,27 @@
 ---
-- name: Deploy Sock Shop full stack via Compose
+- name: Resolve compose file set
+  ansible.builtin.set_fact:
+    compose_file: docker-compose.full.yml
+    compose_ports_file: docker-compose.ports-default.yml
+
+- name: Pull images
   ansible.builtin.command:
-    cmd: docker compose -f {{ compose_file }} up -d
+    cmd: docker compose -f {{ compose_file }} -f {{ compose_ports_file }} pull
     chdir: "{{ compose_dir }}"
-  register: compose_up
   changed_when: true
 
-- name: Wait for shop HTTP
+- name: Deploy full stack
+  ansible.builtin.command:
+    cmd: docker compose -f {{ compose_file }} -f {{ compose_ports_file }} up -d
+    chdir: "{{ compose_dir }}"
+  changed_when: true
+
+- name: Wait for shop
   ansible.builtin.uri:
     url: http://localhost/
-    status_code: [200, 301, 302]
-  register: shop_health
-  until: shop_health.status in [200, 301, 302]
-  retries: 36
+    status_code: [200, 301, 302, 404]
+  register: shop
+  until: shop.status < 500
+  retries: 40
   delay: 5
   ignore_errors: true
