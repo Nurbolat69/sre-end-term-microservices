@@ -1,9 +1,12 @@
-# SRE End Term Project — Full Implementation
+# SRE End Term Project — Team + CI/CD
 
-**End-to-End Site Reliability Engineering** on Weaveworks Sock Shop: multi-orchestration, IaC, observability, incident management, capacity planning.
+**End-to-End Site Reliability Engineering** on Sock Shop: multi-orchestration, IaC, observability, incidents, **GitHub Actions CI/CD**.
 
-> Полный чеклист сдачи: [`docs/CHECKLIST.md`](docs/CHECKLIST.md)  
-> Отчёт для PDF: [`docs/PROJECT_REPORT.md`](docs/PROJECT_REPORT.md)
+> **SUBMIT:** [`docs/TEAM_REPORT.md`](docs/TEAM_REPORT.md) → **REPORT.pdf** (40 pts)  
+> **SUBMIT:** [`docs/PRESENTATION.md`](docs/PRESENTATION.md) → **PRESENTATION.pdf**  
+> Guide: [`docs/SUBMISSION.md`](docs/SUBMISSION.md)  
+> Team: [`docs/TEAM.md`](docs/TEAM.md)  
+> CI/CD: [GitHub Actions](https://github.com/Nurbolat69/sre-end-term-microservices/actions)
 
 ---
 
