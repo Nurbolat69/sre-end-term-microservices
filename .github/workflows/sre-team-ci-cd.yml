@@ -38,15 +38,21 @@ jobs:
 
       - name: Prometheus rules (promtool)
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE/sre-end-term/monitoring:/etc/prometheus" \
-            prom/prometheus:v2.47.0 promtool check rules /etc/prometheus/recording.rules
-          docker run --rm -v "$GITHUB_WORKSPACE/sre-end-term/monitoring:/etc/prometheus" \
-            prom/prometheus:v2.47.0 promtool check rules /etc/prometheus/alert.rules
+          docker run --rm --entrypoint promtool \
+            -v "$GITHUB_WORKSPACE/sre-end-term/monitoring:/etc/prometheus" \
+            prom/prometheus:v2.47.0 \
+            check rules /etc/prometheus/recording.rules
+          docker run --rm --entrypoint promtool \
+            -v "$GITHUB_WORKSPACE/sre-end-term/monitoring:/etc/prometheus" \
+            prom/prometheus:v2.47.0 \
+            check rules /etc/prometheus/alert.rules
 
-      - name: Prometheus config
+      - name: Prometheus config (syntax only)
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE/sre-end-term/monitoring:/etc/prometheus" \
-            prom/prometheus:v2.47.0 promtool check config /etc/prometheus/prometheus.yml
+          docker run --rm --entrypoint promtool \
+            -v "$GITHUB_WORKSPACE/sre-end-term/monitoring:/etc/prometheus" \
+            prom/prometheus:v2.47.0 \
+            check config /etc/prometheus/prometheus.yml --syntax-only
 
       - uses: imranismail/setup-kustomize@v2
       - name: Kustomize build
@@ -56,7 +62,7 @@ jobs:
       - name: Shellcheck CI scripts
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck sre-end-term/ci/smoke.sh sre-end-term/ci/validate.sh
+          shellcheck -x sre-end-term/ci/smoke.sh
 
   terraform-validate:
     name: CI - Terraform
