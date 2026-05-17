@@ -1,0 +1,30 @@
+---
+- name: Deploy Docker Swarm stack
+  hosts: swarm_managers
+  become: true
+  tasks:
+    - name: Initialize Swarm on manager (idempotent)
+      ansible.builtin.command: docker swarm init
+      register: swarm_init
+      failed_when: swarm_init.rc != 0 and 'already part of a swarm' not in swarm_init.stderr
+      changed_when: "'Swarm initialized' in swarm_init.stdout"
+
+    - name: Copy stack file to manager
+      ansible.builtin.copy:
+        src: "{{ sre_root }}/docker-swarm/docker-stack.yml"
+        dest: /tmp/docker-stack.yml
+        mode: "0644"
+
+    - name: Deploy stack
+      ansible.builtin.command:
+        cmd: docker stack deploy -c /tmp/docker-stack.yml {{ swarm_stack_name }}
+      changed_when: true
+
+    - name: List stack services
+      ansible.builtin.command: docker stack services {{ swarm_stack_name }}
+      register: stack_services
+      changed_when: false
+
+    - name: Show services
+      ansible.builtin.debug:
+        var: stack_services.stdout_lines

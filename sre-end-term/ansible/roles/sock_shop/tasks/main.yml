@@ -1,0 +1,17 @@
+---
+- name: Deploy Sock Shop full stack via Compose
+  ansible.builtin.command:
+    cmd: docker compose -f {{ compose_file }} up -d
+    chdir: "{{ compose_dir }}"
+  register: compose_up
+  changed_when: true
+
+- name: Wait for shop HTTP
+  ansible.builtin.uri:
+    url: http://localhost/
+    status_code: [200, 301, 302]
+  register: shop_health
+  until: shop_health.status in [200, 301, 302]
+  retries: 36
+  delay: 5
+  ignore_errors: true

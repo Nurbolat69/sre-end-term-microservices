@@ -1,0 +1,17 @@
+---
+# Master playbook — uses roles (Assignment 6)
+- name: SRE End Term — deploy on local workstation
+  hosts: local
+  gather_facts: true
+  roles:
+    - role: sock_shop
+      vars:
+        compose_dir: "{{ sre_root }}/docker-compose"
+        compose_file: docker-compose.full.yml
+
+- name: Install Docker on remote Swarm/K8s nodes
+  hosts: swarm_managers:k8s_workers
+  become: true
+  roles:
+    - common
+    - docker

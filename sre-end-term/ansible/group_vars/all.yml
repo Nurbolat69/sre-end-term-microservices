@@ -1,0 +1,7 @@
+---
+compose_dir: "{{ sre_root }}/docker-compose"
+compose_file: docker-compose.full.yml
+swarm_stack_name: sre-sock-shop
+grafana_admin_password: foobar
+deploy_monitoring: false
+deploy_application: true

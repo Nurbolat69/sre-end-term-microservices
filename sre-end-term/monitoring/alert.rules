@@ -1,0 +1,84 @@
+# Prometheus alerting rules — SLI/SLO (Assignments 2, 3, 4)
+groups:
+  - name: sre_slo_alerts
+    rules:
+      - alert: SLO_ErrorRateBreach
+        expr: sre:error_rate:5m > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Error rate SLO breach ({{ $labels.job }})"
+          description: "5xx error rate > 1% for 5m. Current: {{ $value | humanizePercentage }}"
+
+      - alert: SLO_LatencyP95Breach
+        expr: sre:latency_p95:5m > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latency SLO breach ({{ $labels.job }})"
+          description: "p95 > 200ms for 5m. Current: {{ $value }}s"
+
+      - alert: SLO_AvailabilityBreach
+        expr: sre:availability:5m < 0.99
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Availability SLO breach ({{ $labels.job }})"
+          description: "Scrape availability < 99% for 5m."
+
+      - alert: SLO_SuccessRateBreach
+        expr: sre:success_rate:5m < 0.99
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Request success rate below 99% ({{ $labels.job }})"
+
+      - alert: ServiceDown
+        expr: up{job=~"orders|payment|catalogue|user|edge-router"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Prometheus target unreachable."
+
+      - alert: OrderServiceHighErrors
+        expr: |
+          (
+            sum(rate(request_duration_seconds_count{job="orders",status_code=~"5.."}[5m]))
+            /
+            sum(rate(request_duration_seconds_count{job="orders"}[5m]))
+          ) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: order
+        annotations:
+          summary: "Order service degraded — possible DB misconfiguration"
+          description: "See docs/incident-response.md and run recover-incident.ps1"
+
+  - name: capacity_alerts
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+          / node_memory_MemTotal_bytes > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Node memory above 85%"
+          description: "Scale horizontally or increase limits — docs/capacity-planning.md"
+
+      - alert: HighCPURequestRate
+        expr: sre:request_rate:5m{job=~"orders|payment"} > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High load on {{ $labels.job }}"
+          description: "Consider HPA / Swarm replica increase."

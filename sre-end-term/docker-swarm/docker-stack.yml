@@ -1,0 +1,142 @@
+# Docker Swarm stack — Assignment multi-orchestration (Section 6.1)
+version: '3.8'
+
+services:
+  edge-router:
+    image: weaveworksdemos/edge-router:0.1.1
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+    networks:
+      - shop-net
+
+  front-end:
+    image: weaveworksdemos/front-end:0.3.12
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    networks:
+      - shop-net
+
+  catalogue:
+    image: weaveworksdemos/catalogue:0.3.5
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    networks:
+      - shop-net
+
+  catalogue-db:
+    image: weaveworksdemos/catalogue-db:0.3.0
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_DATABASE=socksdb
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - shop-net
+
+  orders:
+    image: weaveworksdemos/orders:0.4.7
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Dspring.zipkin.enabled=false
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+      labels:
+        - sre.service=order-service
+    networks:
+      - shop-net
+
+  orders-db:
+    image: mongo:3.4
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+  payment:
+    image: weaveworksdemos/payment:0.4.3
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    networks:
+      - shop-net
+
+  user:
+    image: weaveworksdemos/user:0.4.4
+    environment:
+      - MONGO_HOST=user-db:27017
+    deploy:
+      replicas: 2
+    networks:
+      - shop-net
+
+  user-db:
+    image: weaveworksdemos/user-db:0.4.0
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+  queue-master:
+    image: weaveworksdemos/queue-master:0.3.1
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+  rabbitmq:
+    image: rabbitmq:3.6.8
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+  shipping:
+    image: weaveworksdemos/shipping:0.4.8
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+  carts:
+    image: weaveworksdemos/carts:0.4.8
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+  carts-db:
+    image: mongo:3.4
+    deploy:
+      replicas: 1
+    networks:
+      - shop-net
+
+networks:
+  shop-net:
+    driver: overlay
+    attachable: true

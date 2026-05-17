@@ -1,0 +1,132 @@
+# Sock Shop — Docker Compose (Assignment 1)
+# Service labels map to SRE assignment names (see README).
+version: '3.8'
+
+services:
+  edge-router:
+    image: weaveworksdemos/edge-router:0.1.1
+    ports:
+      - '80:80'
+      - '8080:8080'
+    hostname: edge-router
+    restart: unless-stopped
+    depends_on:
+      - front-end
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/cart']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  front-end:
+    image: weaveworksdemos/front-end:0.3.12
+    hostname: front-end
+    restart: unless-stopped
+    labels:
+      sre.service: frontend-nginx
+
+  catalogue:
+    image: weaveworksdemos/catalogue:0.3.5
+    hostname: catalogue
+    restart: unless-stopped
+    labels:
+      sre.service: product-service
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  catalogue-db:
+    image: weaveworksdemos/catalogue-db:0.3.0
+    hostname: catalogue-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_DATABASE=socksdb
+
+  orders:
+    image: weaveworksdemos/orders:0.4.7
+    hostname: orders
+    restart: unless-stopped
+    labels:
+      sre.service: order-service
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  orders-db:
+    image: mongo:3.4
+    hostname: orders-db
+    restart: unless-stopped
+    labels:
+      sre.service: order-database
+
+  payment:
+    image: weaveworksdemos/payment:0.4.3
+    hostname: payment
+    restart: unless-stopped
+    labels:
+      sre.service: payment-service
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  user:
+    image: weaveworksdemos/user:0.4.4
+    hostname: user
+    restart: unless-stopped
+    labels:
+      sre.service: auth-and-profile-service
+    environment:
+      - MONGO_HOST=user-db:27017
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  user-db:
+    image: weaveworksdemos/user-db:0.4.0
+    hostname: user-db
+    restart: unless-stopped
+
+  shipping:
+    image: weaveworksdemos/shipping:0.4.8
+    hostname: shipping
+    restart: unless-stopped
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  carts:
+    image: weaveworksdemos/carts:0.4.8
+    hostname: carts
+    restart: unless-stopped
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  carts-db:
+    image: mongo:3.4
+    hostname: carts-db
+    restart: unless-stopped
+
+  queue-master:
+    image: weaveworksdemos/queue-master:0.3.1
+    hostname: queue-master
+    restart: unless-stopped
+    labels:
+      sre.service: notification-service
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  rabbitmq:
+    image: rabbitmq:3.6.8
+    hostname: rabbitmq
+    restart: unless-stopped

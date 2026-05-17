@@ -1,0 +1,27 @@
+# Published ports when 80, 3000, 9090 are free
+services:
+  edge-router:
+    ports:
+      - '80:80'
+      - '8080:8080'
+  prometheus:
+    ports:
+      - '9090:9090'
+  alertmanager:
+    ports:
+      - '9093:9093'
+  grafana:
+    ports:
+      - '3000:3000'
+  nodeexporter:
+    ports:
+      - '9100:9100'
+  cadvisor:
+    ports:
+      - '8081:8080'
+  postgres-sre:
+    ports:
+      - '5432:5432'
+  redis:
+    ports:
+      - '6379:6379'

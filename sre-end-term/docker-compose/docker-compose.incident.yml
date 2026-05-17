@@ -1,0 +1,8 @@
+# Assignment 4 — Order Service DB misconfiguration overlay
+# Usage: docker compose -f docker-compose.full.yml -f docker-compose.incident.yml up -d orders --force-recreate
+
+services:
+  orders:
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Dspring.zipkin.enabled=false
+      - MONGO_HOST=orders-db-broken:27017

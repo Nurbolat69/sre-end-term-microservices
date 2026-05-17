@@ -1,0 +1,26 @@
+---
+- name: Install Docker and dependencies (Linux nodes)
+  hosts: swarm_managers:k8s_workers
+  become: true
+  tasks:
+    - name: Install Docker packages (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-plugin
+          - python3-pip
+        state: present
+        update_cache: true
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add deploy user to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true

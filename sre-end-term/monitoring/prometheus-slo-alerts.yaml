@@ -1,0 +1,28 @@
+# Kubernetes ConfigMap — SLO alert rules for monitoring namespace
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-slo-alertrules
+  namespace: monitoring
+  labels:
+    project: sre-end-term
+data:
+  slo.rules: |-
+    groups:
+    - name: sre_slo_k8s
+      rules:
+      - alert: HighErrorRate
+        expr: rate(request_duration_seconds_count{status_code="500"}[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HTTP 500 rate exceeds 1% SLO"
+      - alert: OrdersServiceDown
+        expr: absent(up{job="kubernetes-pods",pod=~".*orders.*"}) or up{pod=~".*orders.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: order
+        annotations:
+          summary: "Order service unavailable"

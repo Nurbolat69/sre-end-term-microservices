@@ -1,0 +1,16 @@
+---
+# Optional: PodMonitor-style scrape hints via pod annotations (for Prometheus Operator setups)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-scrape-hints
+  namespace: sock-shop
+  labels:
+    project: sre-end-term
+data:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "80"
+  prometheus.io/path: "/metrics"
+  README: |
+    Sock Shop orders deployment should expose /metrics on port 80.
+    Wire into your Prometheus scrape config or ServiceMonitor if using the operator.

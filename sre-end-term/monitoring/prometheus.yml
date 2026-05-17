@@ -1,0 +1,90 @@
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/recording.rules
+  - /etc/prometheus/alert.rules
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  - job_name: edge-router
+    metrics_path: metrics
+    static_configs:
+      - targets: ['edge-router:80']
+        labels:
+          service: frontend
+
+  - job_name: catalogue
+    static_configs:
+      - targets: ['catalogue:80']
+        labels:
+          service: product
+
+  - job_name: orders
+    metrics_path: metrics
+    static_configs:
+      - targets: ['orders:80']
+        labels:
+          service: order
+
+  - job_name: payment
+    static_configs:
+      - targets: ['payment:80']
+        labels:
+          service: payment
+
+  - job_name: user
+    static_configs:
+      - targets: ['user:80']
+        labels:
+          service: auth-profile
+
+  - job_name: carts
+    metrics_path: metrics
+    static_configs:
+      - targets: ['carts:80']
+
+  - job_name: shipping
+    static_configs:
+      - targets: ['shipping:80']
+
+  - job_name: queue-master
+    metrics_path: prometheus
+    static_configs:
+      - targets: ['queue-master:80']
+        labels:
+          service: notification
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ['nodeexporter:9100']
+        labels:
+          layer: infrastructure
+
+  - job_name: cadvisor
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          layer: containers
+
+  - job_name: postgres-exporter
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          service: postgresql-reference
+
+  - job_name: redis-exporter
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: redis-broker

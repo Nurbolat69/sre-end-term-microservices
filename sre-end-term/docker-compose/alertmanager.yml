@@ -1,0 +1,30 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: default
+  routes:
+    - match:
+        severity: critical
+      receiver: critical
+    - match:
+        severity: warning
+      receiver: default
+
+receivers:
+  - name: default
+    # Configure webhook/email for production; console logging via Prometheus UI for demo
+  - name: critical
+    # Example: webhook_configs:
+    #   - url: 'http://127.0.0.1:5001/'
+
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['alertname', 'service']

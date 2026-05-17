@@ -1,0 +1,21 @@
+---
+- name: Install Docker (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose-plugin
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Docker service enabled
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user | default(ansible_env.USERNAME) }}"
+    groups: docker
+    append: true
+  when: ansible_user is defined or ansible_env.USERNAME is defined

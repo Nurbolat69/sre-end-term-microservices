@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sre-deployment-guide
+  namespace: sock-shop
+  labels:
+    project: sre-end-term
+data:
+  ASSIGNMENT_01: "kubectl apply -f deploy/kubernetes/manifests/"
+  ASSIGNMENT_03: "kubectl apply -f deploy/kubernetes/manifests-monitoring/"
+  ASSIGNMENT_06_HPA: "kubectl apply -f sre-end-term/kubernetes/01-hpa-orders-payment.yaml"
+  SLO_AVAILABILITY: "99%"
+  SLO_LATENCY_P95_MS: "200"
+  SLO_ERROR_RATE: "1%"
+  INCIDENT_RUNBOOK: "sre-end-term/docs/incident-response.md"

@@ -1,0 +1,306 @@
+# Full stack: microservices + Prometheus + Grafana + Alertmanager (Assignment 1 & 3)
+# Usage: docker compose -f docker-compose.full.yml up -d
+
+name: sre-end-term
+
+services:
+  edge-router:
+    image: weaveworksdemos/edge-router:0.1.1
+    hostname: edge-router
+    restart: unless-stopped
+    depends_on:
+      front-end:
+        condition: service_started
+    networks:
+      - sre-net
+    labels:
+      sre.role: api-gateway
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/cart']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  front-end:
+    image: weaveworksdemos/front-end:0.3.12
+    hostname: front-end
+    restart: unless-stopped
+    networks:
+      - sre-net
+    labels:
+      sre.service: frontend-nginx
+
+  catalogue:
+    image: weaveworksdemos/catalogue:0.3.5
+    hostname: catalogue
+    restart: unless-stopped
+    networks:
+      - sre-net
+    labels:
+      sre.service: product-service
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  catalogue-db:
+    image: weaveworksdemos/catalogue-db:0.3.0
+    hostname: catalogue-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_DATABASE=socksdb
+    networks:
+      - sre-net
+
+  orders:
+    image: weaveworksdemos/orders:0.4.7
+    hostname: orders
+    restart: unless-stopped
+    depends_on:
+      - orders-db
+    networks:
+      - sre-net
+    labels:
+      sre.service: order-service
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  orders-db:
+    image: mongo:3.4
+    hostname: orders-db
+    restart: unless-stopped
+    networks:
+      - sre-net
+    labels:
+      sre.service: order-database
+
+  payment:
+    image: weaveworksdemos/payment:0.4.3
+    hostname: payment
+    restart: unless-stopped
+    networks:
+      - sre-net
+    labels:
+      sre.service: payment-service
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  user:
+    image: weaveworksdemos/user:0.4.4
+    hostname: user
+    restart: unless-stopped
+    depends_on:
+      - user-db
+    networks:
+      - sre-net
+    labels:
+      sre.service: auth-and-profile-service
+    environment:
+      - MONGO_HOST=user-db:27017
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost/health']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  user-db:
+    image: weaveworksdemos/user-db:0.4.0
+    hostname: user-db
+    restart: unless-stopped
+    networks:
+      - sre-net
+
+  shipping:
+    image: weaveworksdemos/shipping:0.4.8
+    hostname: shipping
+    restart: unless-stopped
+    networks:
+      - sre-net
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  carts:
+    image: weaveworksdemos/carts:0.4.8
+    hostname: carts
+    restart: unless-stopped
+    depends_on:
+      - carts-db
+    networks:
+      - sre-net
+    environment:
+      - JAVA_OPTS=-Xms64m -Xmx128m -XX:+UseG1GC -Djava.security.egd=file:/dev/urandom -Dspring.zipkin.enabled=false
+
+  carts-db:
+    image: mongo:3.4
+    hostname: carts-db
+    restart: unless-stopped
+    networks:
+      - sre-net
+
+  queue-master:
+    image: weaveworksdemos/queue-master:0.3.1
+    hostname: queue-master
+    restart: unless-stopped
+    networks:
+      - sre-net
+    labels:
+      sre.service: notification-service
+
+  rabbitmq:
+    image: rabbitmq:3.6.8
+    hostname: rabbitmq
+    restart: unless-stopped
+    networks:
+      - sre-net
+    labels:
+      sre.service: message-broker-rabbitmq
+
+  # PDF §4 — PostgreSQL (reference / SRE metadata; parallel to app DBs)
+  postgres-sre:
+    image: postgres:15-alpine
+    hostname: postgres-sre
+    restart: unless-stopped
+    networks:
+      - sre-net
+    environment:
+      POSTGRES_USER: sre
+      POSTGRES_PASSWORD: sre
+      POSTGRES_DB: sre_metadata
+    volumes:
+      - postgres-sre-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sre -d sre_metadata']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      sre.service: postgresql-reference
+
+  # PDF §4 — Redis (optional cache / broker)
+  redis:
+    image: redis:7-alpine
+    hostname: redis
+    restart: unless-stopped
+    networks:
+      - sre-net
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    labels:
+      sre.service: redis-broker
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    hostname: redis-exporter
+    restart: unless-stopped
+    networks:
+      - sre-net
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      - redis
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    hostname: postgres-exporter
+    restart: unless-stopped
+    networks:
+      - sre-net
+    environment:
+      DATA_SOURCE_NAME: postgresql://sre:sre@postgres-sre:5432/sre_metadata?sslmode=disable
+    depends_on:
+      postgres-sre:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    hostname: prometheus
+    restart: unless-stopped
+    networks:
+      - sre-net
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/alert.rules:/etc/prometheus/alert.rules:ro
+      - ../monitoring/recording.rules:/etc/prometheus/recording.rules:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    hostname: alertmanager
+    restart: unless-stopped
+    networks:
+      - sre-net
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/config.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+
+  nodeexporter:
+    image: quay.io/prometheus/node-exporter:v1.6.1
+    hostname: nodeexporter
+    restart: unless-stopped
+    networks:
+      - sre-net
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    hostname: grafana
+    restart: unless-stopped
+    networks:
+      - sre-net
+    depends_on:
+      prometheus:
+        condition: service_started
+      alertmanager:
+        condition: service_started
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=foobar
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=
+    volumes:
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:3000/api/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    hostname: cadvisor
+    restart: unless-stopped
+    networks:
+      - sre-net
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    privileged: true
+    labels:
+      sre.service: container-metrics
+
+volumes:
+  postgres-sre-data:
+
+networks:
+  sre-net:
+    name: sre-end-term-net
+    driver: bridge

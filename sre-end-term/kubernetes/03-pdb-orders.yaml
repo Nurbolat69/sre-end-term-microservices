@@ -1,0 +1,14 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orders-pdb
+  namespace: sock-shop
+  labels:
+    project: sre-end-term
+    sre.service: order-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      name: orders

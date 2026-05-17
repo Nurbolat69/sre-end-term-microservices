@@ -1,0 +1,12 @@
+.deploy-ports.env
+docker-compose/docker-compose.monitoring.runtime.yml
+evidence/*.txt
+evidence/*.json
+!evidence/.gitkeep
+!evidence/README.txt
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/terraform.tfvars
+terraform/aws/terraform.tfvars
+*.log
+.DS_Store

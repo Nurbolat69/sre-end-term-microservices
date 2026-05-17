@@ -1,0 +1,24 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sock-shop
+  labels:
+    project: sre-end-term
+    purpose: microservices-demo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sre-slo-config
+  namespace: sock-shop
+  labels:
+    project: sre-end-term
+data:
+  availability_slo: "99%"
+  latency_p95_slo_ms: "200"
+  error_rate_slo: "1%"
+  README: |
+    Core workloads: deploy/kubernetes/manifests/*.yaml
+    Monitoring: deploy/kubernetes/manifests-monitoring/
+    SRE overlays: sre-end-term/monitoring/

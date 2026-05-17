@@ -1,0 +1,32 @@
+---
+- name: Deploy application to Kubernetes
+  hosts: local
+  gather_facts: false
+  vars:
+    k8s_manifests: "{{ project_root }}/deploy/kubernetes/manifests"
+    k8s_monitoring: "{{ project_root }}/deploy/kubernetes/manifests-monitoring"
+  tasks:
+    - name: Create sock-shop namespace
+      ansible.builtin.command:
+        cmd: kubectl apply -f {{ sre_root }}/kubernetes/00-namespace.yaml
+      changed_when: true
+
+    - name: Apply core manifests
+      ansible.builtin.shell: |
+        kubectl apply -f {{ k8s_manifests }}/
+      args:
+        executable: /bin/bash
+      changed_when: true
+
+    - name: Apply SRE alert rules
+      ansible.builtin.command:
+        cmd: kubectl apply -f {{ sre_root }}/monitoring/prometheus-slo-alerts.yaml
+      changed_when: true
+
+    - name: Apply monitoring manifests
+      ansible.builtin.shell: |
+        kubectl apply -f {{ k8s_monitoring }}/
+      args:
+        executable: /bin/bash
+      changed_when: true
+      ignore_errors: true

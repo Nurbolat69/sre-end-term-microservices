@@ -1,0 +1,25 @@
+# Prometheus recording rules — SLI pre-aggregation (Assignment 2)
+groups:
+  - name: sre_sli_recording
+    interval: 30s
+    rules:
+      - record: sre:request_rate:5m
+        expr: sum(rate(request_duration_seconds_count[5m])) by (job, service)
+
+      - record: sre:error_rate:5m
+        expr: |
+          sum(rate(request_duration_seconds_count{status_code=~"5.."}[5m])) by (job, service)
+          /
+          sum(rate(request_duration_seconds_count[5m])) by (job, service)
+
+      - record: sre:success_rate:5m
+        expr: 1 - sre:error_rate:5m
+
+      - record: sre:latency_p95:5m
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(request_duration_seconds_bucket[5m])) by (le, job, service)
+          )
+
+      - record: sre:availability:5m
+        expr: avg(up) by (job)

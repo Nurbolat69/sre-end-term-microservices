@@ -1,0 +1,30 @@
+---
+- name: Deploy Prometheus and Grafana (Compose)
+  hosts: local
+  gather_facts: false
+  tasks:
+    - name: Start monitoring overlay
+      ansible.builtin.command:
+        cmd: docker compose -f docker-compose.monitoring.yml up -d
+        chdir: "{{ compose_dir }}"
+      changed_when: true
+
+    - name: Verify Prometheus is up
+      ansible.builtin.uri:
+        url: http://localhost:9090/-/healthy
+        status_code: 200
+      register: prom_health
+      until: prom_health.status == 200
+      retries: 20
+      delay: 3
+      ignore_errors: true
+
+    - name: Verify Grafana is up
+      ansible.builtin.uri:
+        url: http://localhost:3000/api/health
+        status_code: 200
+      register: grafana_health
+      until: grafana_health.status == 200
+      retries: 20
+      delay: 3
+      ignore_errors: true

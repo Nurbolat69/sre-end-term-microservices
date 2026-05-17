@@ -1,0 +1,16 @@
+# Terraform state
+**/terraform.tfstate
+**/terraform.tfstate.*
+**/.terraform/
+
+# Local env
+**/.deploy-ports.env
+**/terraform.tfvars
+sre-end-term/evidence/*.txt
+sre-end-term/evidence/*.json
+!sre-end-term/evidence/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
