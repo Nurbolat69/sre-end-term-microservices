@@ -4,7 +4,7 @@
 
 **Student:** _[Your Name]_  
 **Date:** May 2026  
-**Git repository:** _После push см. `sre-end-term/GITHUB.md` — например `https://github.com/YOUR_USERNAME/sre-end-term-microservices`_
+**Git repository:** https://github.com/Nurbolat69/sre-end-term-microservices
 
 ---
 
